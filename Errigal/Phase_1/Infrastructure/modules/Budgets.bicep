@@ -1,7 +1,7 @@
 targetScope = 'resourceGroup'
 
 param budgetAmount int = 200
-param startDate string = '${utcNow('yyyy-MM')}-01'
+param startDate string
 @description('The end date for the budget. If not provided, we default this to 10 years from the start date.')
 param endDate string = dateTimeAdd(startDate, 'P1Y')
 @description('Minimum budget threshold percentage.')

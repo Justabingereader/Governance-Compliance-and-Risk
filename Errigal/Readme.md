@@ -112,5 +112,10 @@ After a while, it was decided that having two separate repositories for the same
 
 A crucial lesson learnt during this process was to not trust the results displayed by the GUI portal and always verify through the CLI, this was due to a federated credential diagnosis error that was initially fixed on the portal, but was not resolved, leading to two hours of troubleshooting on various methods to resolve the problem, with the fix being the exact same command, but just submitted on the CLI instead, that successfully brought the conclusion of the architecture migration into one point.
 
-
 ![AADSTS700213 - the federated identity mismatch that persisted after the portal 'fix' (trace and correlation IDs redacted)](images/phase1-federated-credential-aadsts700213.png)
+
+### Phase 2 Development
+
+For this phase, a hub and spoke architecture was utilised, as recommended by azure when creating azure virtual networks. A hub and two spokes consisting of the data and app spoke with address ranges of 192.168.1.0/24 and subnet of 192.168.1.0/27 for the hub VNet, 192.168.2.0/24 and 192.168.2.0/27 for the App VNet, and 192.168.3.0 and 192.168.3.0/27 for the data VNet were mapped out. then an hub to data spoke peering was established, after which the module was piped through the main.bicep file and ran through github actions.
+
+After creating the virtual networks, i had to create the peering between the hub and the two spokes, i initially created a single pairing to the hub and app spoke, but further research informed me that it was a two way process, after which i implemented the peering between the hubs and the two spokes successfully. I then ran into an architecture flaw, which involved me passing the parameter file for the hub and spoke bicep file directly into the module, when main.bicep was the entry point for actually calling the parameter file, leaving the parameter file redundant. This prompted me to rewire the parameter file to point towards the main.bicep file, after which i chose to define the parameters again in the main.bicep, leaving me defining the same parameter file in two separate files. i chose this method due to the need to get a working prototype before trying to make it perfect. once i did this i ran the main.bicep file through github actions, it however failed due to an error about the budget start date not being valid. 
