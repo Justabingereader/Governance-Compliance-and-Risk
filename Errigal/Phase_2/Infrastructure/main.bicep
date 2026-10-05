@@ -8,6 +8,7 @@ param appSpokeSubnetAddressPrefix2 string
 param dataSpokeAddressPrefix string
 param dataSpokeSubnetAddressPrefix string
 param tags object
+param startDate string
 
 module GovernanceBaseline './modules/Governance_class_baseline.bicep' = {
   name: 'GovernanceBaseline'
@@ -17,6 +18,9 @@ module GovernanceBaseline './modules/Governance_class_baseline.bicep' = {
 module Budgets './modules/Budgets.bicep' = {
   name: 'Budgets'
   scope: resourceGroup('Errigal')
+  params: {
+    startDate: startDate
+  }
 }
 
 module HubAndSpoke './modules/Hub-and-Spoke.bicep' = {

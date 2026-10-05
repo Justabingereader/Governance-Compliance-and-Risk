@@ -12,3 +12,4 @@ param tags = {
 	owner: 'Admin'
 	dataClass: 'internal'
 }
+param startDate = '2026-09-01'
