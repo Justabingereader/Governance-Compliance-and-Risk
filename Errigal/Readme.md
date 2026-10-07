@@ -112,5 +112,66 @@ After a while, it was decided that having two separate repositories for the same
 
 A crucial lesson learnt during this process was to not trust the results displayed by the GUI portal and always verify through the CLI, this was due to a federated credential diagnosis error that was initially fixed on the portal, but was not resolved, leading to two hours of troubleshooting on various methods to resolve the problem, with the fix being the exact same command, but just submitted on the CLI instead, that successfully brought the conclusion of the architecture migration into one point.
 
-
 ![AADSTS700213 - the federated identity mismatch that persisted after the portal 'fix' (trace and correlation IDs redacted)](images/phase1-federated-credential-aadsts700213.png)
+
+### Phase 2 Development
+
+For this phase, a hub and spoke architecture was utilised, as recommended by azure when creating azure virtual networks. My first draft put all three subnets inside a single virtual network on 192.168.1.0/24, before i split it into a hub and two spokes, the data and app spoke, each as its own virtual network.
+
+![First draft - hub, app and data subnets all inside one 192.168.1.0/24 virtual network (username redacted)](images/phase2-single-vnet-subnets-draft.png)
+
+![Splitting out the hub virtual network (username redacted)](images/phase2-hub-vnet.png)
+
+![The app and data spokes as their own virtual networks (username redacted)](images/phase2-spoke-vnets.png)
+
+The address ranges were initially mapped out as 192.168.1.0/24 with a 192.168.1.0/27 subnet for the hub VNet, 192.168.2.0/24 and 192.168.2.0/27 for the App VNet, and 192.168.3.0/24 and 192.168.3.0/27 for the data VNet. In the final parameter file these were moved to the 10.10.0.0/16 space: 10.10.1.0/24 (subnet 10.10.1.0/27) for the hub, 10.10.2.0/24 (subnets 10.10.2.0/27 and 10.10.2.32/27) for the app spoke, and 10.10.3.0/24 (subnet 10.10.3.0/27) for the data spoke. then a hub to data spoke peering was established, after which the module was piped through the main.bicep file and ran through github actions.
+
+![Final Hub-and-Spoke.bicepparam - 10.10.x ranges, second app subnet and tags (username redacted)](images/phase2-bicepparam-final-ranges.png)
+
+After creating the virtual networks, i had to create the peering between the hub and the two spokes, i initially created a single pairing to the hub and app spoke, but further research informed me that it was a two way process, after which i implemented the peering between the hubs and the two spokes successfully.
+
+![The initial one-directional hub-to-app peering (username redacted)](images/phase2-single-hub-to-app-peering.png)
+
+![Adding the return peering from the app spoke to the hub (username redacted)](images/phase2-bidirectional-peerings.png)
+
+![All four peerings - hub to each spoke and each spoke back to the hub (username redacted)](images/phase2-four-peerings.png)
+
+![Outputs exposing the three VNet IDs (username redacted)](images/phase2-final-outputs.png)
+
+I then parameterised the module and added a typed tags object so the hub and spoke resources carry the same costCentre, owner and dataClass tags the governance initiative requires.
+
+![Hard-coded ranges replaced with parameters (username redacted)](images/phase2-parameterised-module.png)
+
+![A resourceTags type enforcing costCentre, owner and dataClass (username redacted)](images/phase2-tags-type.png)
+
+I then ran into an architecture flaw, which involved me passing the parameter file for the hub and spoke bicep file directly into the module, when main.bicep was the entry point for actually calling the parameter file, leaving the parameter file redundant.
+
+![The flaw - the .bicepparam pointed straight at the module instead of main.bicep (username redacted)](images/phase2-bicepparam-direct-to-module.png)
+
+This prompted me to rewire the parameter file to point towards the main.bicep file, after which i chose to define the parameters again in the main.bicep, leaving me defining the same parameter file in two separate files. i chose this method due to the need to get a working prototype before trying to make it perfect.
+
+![BCP035 - the module declaration in main.bicep missing its required params](images/phase2-bcp035-missing-params.png)
+
+once i did this i ran the main.bicep file through github actions, it however failed due to an error about the budget start date being different from the initial date due to the UtcNow() function, which produced a new value on each run, and was inconsistent with the consistent and non updatable budget start dates required by azure.
+
+![The cause - startDate defaulting to utcNow(), producing a new value every run (email and username redacted)](images/phase2-budgets-utcnow-startdate.png)
+
+!["Start date of budgets cannot be updated" in the pipeline run (subscription ID masked by GitHub)](images/phase2-budget-startdate-failure.png)
+
+after i moved the startdate to the main.bicep parameter file, then changed the yml extension to reflect phase 2 and not phase 1's main.bicep file, with the inclusion of the parameters file directory into the yml file, the run was finally successfully deployed through github actions.
+
+![startDate pinned in the parameter file (username redacted)](images/phase2-bicepparam-startdate.png)
+
+![main.bicep passing startDate through to the Budgets module (username redacted)](images/phase2-main-bicep-startdate-param.png)
+
+![The workflow re-pointed at Errigal/Phase_2/Infrastructure/main.bicep (username redacted)](images/phase2-pipeline-yml-phase2-path.png)
+
+![Phase 2 test run #7 succeeding](images/phase2-pipeline-success.png)
+
+The peerings were then verified in the portal, each showing as Connected and Fully Synchronized.
+
+![HubSpokeVNet - peerings to both spokes connected (tenant URL and account redacted)](images/phase2-hub-peerings.png)
+
+![AppSpokeVNet - peering back to the hub (tenant URL and account redacted)](images/phase2-appspoke-peering.png)
+
+![DataSpokeVNet - peering back to the hub (tenant URL and account redacted)](images/phase2-dataspoke-peering.png)
