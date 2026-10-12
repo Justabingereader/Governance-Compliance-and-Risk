@@ -7,11 +7,12 @@ param appSpokeSubnetAddressPrefix string
 param appSpokeSubnetAddressPrefix2 string
 param dataSpokeAddressPrefix string
 param dataSpokeSubnetAddressPrefix string
+param PrivateHubEndpointSubnetAddressPrefix string
 
 type resourceTags = {
-  costCentre: string
-  owner: string
-  dataClass: string
+  costCentre: 'IT' | 'Finance' | 'Governance'
+  owner: 'Admin' | 'User' | 'Manager'
+  dataClass: 'protected' | 'confidential' | 'internal' | 'public'
 }
 
 param tags resourceTags
@@ -31,6 +32,13 @@ resource CreateHubVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-02-01' 
         name: 'HubSubnet'
         properties: {
           addressPrefix: hubSubnetAddressPrefix
+        }
+      }
+      {
+        name: 'PrivateHubEndpointSubnet'
+        properties: {
+          addressPrefix: PrivateHubEndpointSubnetAddressPrefix
+          privateEndpointNetworkPolicies: 'NetworkSecurityGroup'
         }
       }
     ]
@@ -134,6 +142,40 @@ resource CreateDataSpokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualN
       id: CreateHubVirtualNetwork.id
     }
     allowVirtualNetworkAccess: true
+  }
+}
+
+resource NSGRULES 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+  name: 'NSGRULES'
+  location: resourceGroup().location
+  tags: tags
+  properties: {
+    securityRules: [
+      {
+        name: 'AllowAppIntegrationSubnet'
+        properties: {
+          priority: 100
+          direction: 'Inbound'
+          sourceAddressPrefix: appSpokeSubnetAddressPrefix2
+          destinationAddressPrefix: PrivateHubEndpointSubnetAddressPrefix
+          destinationPortRange: '443'
+          protocol: 'Tcp'
+          access: 'Allow'
+        }
+      }
+      { 
+        name: 'DenyAllOtherTraffic'
+        properties: {
+          priority: 4000
+          direction: 'Inbound'
+          sourceAddressPrefix: '*'
+          destinationAddressPrefix: PrivateHubEndpointSubnetAddressPrefix
+          destinationPortRange: '*'
+          protocol: '*'
+          access: 'Deny'
+        }
+      }
+    ]
   }
 }
 

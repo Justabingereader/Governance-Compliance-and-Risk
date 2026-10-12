@@ -1,44 +1,37 @@
 targetScope = 'subscription'
 
 @description('Name of the custom policy initiative.')
-param initiativeName string = 'CustomInitiative'
+param initiativeName string
 
 @description('Display name of the custom policy initiative.')
-param initiativeDisplayName string = 'Custom Initiative: Governance Policies'
+param initiativeDisplayName string
 
 @description('Description of the custom policy initiative.')
-param initiativeDescription string = 'An initiative that includes custom policies for governance.'
+param initiativeDescription string
 
 @description('Name of the policy assignment.')
-param assignmentName string = 'CustomInitiativeAssignment'
+param assignmentName string
 
 @description('Display name of the policy assignment.')
-param assignmentDisplayName string = 'Custom Initiative Assignment: Governance Policies'
+param assignmentDisplayName string
 
 @description('Description of the policy assignment.')
-param assignmentDescription string = 'Assignment of the custom initiative for governance policies.'
+param assignmentDescription string
 
 @description('Allowed App Service Plan SKU tiers.')
-param allowedServerFarmTiers string[] = [
-  'Free'
-  'Shared'
-  'Basic'
-]
+param allowedServerFarmTiers string[]
 
 @description('Allowed managed disk SKU names.')
-param allowedDiskSkus string[] = [
-  'Standard_LRS'
-  'Premium_LRS'
-]
+param allowedDiskSkus string[]
 
 @description('SKU pattern allowed for virtual machines.')
-param allowedVmSku string = 'Standard_B*'
+param allowedVmSku string
 
 @description('SKU pattern allowed for virtual machine scale sets.')
-param allowedVmScaleSetSku string = 'Standard_B*'
+param allowedVmScaleSetSku string
 
 @description('Resource location allowed by the region policy.')
-param allowedLocation string = 'northeurope'
+param allowedLocation string
 
 @description('First tag name required on indexed resources.')
 param requiredTagName1 string = 'costCentre'
@@ -48,6 +41,15 @@ param requiredTagName2 string = 'owner'
 
 @description('Third tag name required on indexed resources.')
 param requiredTagName3 string = 'dataClass'
+
+@description('Allowed values for the cost centre tag.')
+param allowedCostCentreTagValues string[]
+
+@description('Allowed values for the owner tag.')
+param allowedOwnerTagValues string[]
+
+@description('Allowed values for the data classification tag.')
+param allowedDataClassTagValues string[]
 
 resource Custominitiative 'Microsoft.Authorization/policySetDefinitions@2023-04-01' = {
   name: initiativeName
@@ -315,21 +317,40 @@ resource RequirecostCentreownerdataClasspolicy 'Microsoft.Authorization/policyDe
             exists: false
           }
           {
+            field: 'tags.${requiredTagName1}'
+            notIn: allowedCostCentreTagValues
+          }
+          {
+            field: 'tags.${requiredTagName3}'
+            exists: false
+          }
+          {
+            field: 'tags.${requiredTagName3}'
+            notIn: allowedDataClassTagValues
+          }
+          {
             field: 'tags.${requiredTagName2}'
             exists: false
           }
           {
+            field: 'tags.${requiredTagName2}'
+            notIn: allowedOwnerTagValues
+          }
+          {
             field: 'tags.${requiredTagName3}'
             exists: false
           }
           {
             field: 'tags.${requiredTagName3}'
-            notIn: [
-              'protected'
-              'confidential'
-              'internal'
-              'public'
-            ]
+            notIn: allowedDataClassTagValues
+          }
+          {
+            field: 'tags.${requiredTagName3}'
+            exists: false
+          }
+          {
+            field: 'tags.${requiredTagName3}'
+            notIn: allowedDataClassTagValues
           }
         ]
       }
