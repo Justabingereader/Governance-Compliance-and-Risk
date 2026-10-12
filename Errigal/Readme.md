@@ -175,7 +175,10 @@ The peerings were then verified in the portal, each showing as Connected and Ful
 ![AppSpokeVNet - peering back to the hub (tenant URL and account redacted)](images/phase2-appspoke-peering.png)
 
 ![DataSpokeVNet - peering back to the hub (tenant URL and account redacted)](images/phase2-dataspoke-peering.png)
+<<<<<<< HEAD
 
 I decided to keep the dataspoke empty and available for future workloads which would be inserted into the VNet. The spoke would currently be empty for the phase, with private endpoints being available in the hub.
 
 In order to create my NSG, i mapped out what each subnetprefix actually did at the moment, with only the appspokesubnet2 being the only non empty subnet and thus the only valid subnet to enable as the NSG, i then created a security rule that denied all other inbound traffic to the NSG as it there's an implicit allow of priority 65000 on all successfully peered virtual networks, setting my appspokesubnet 2 to a priority of 100, and the general deny action to a priority of 4000. I then enabled a the private endpoint network policy on the destination subnet in order to enable the operation of NSG.
+=======
+>>>>>>> 420211c983ad3e251415a0ed5b865549fb553bf7
