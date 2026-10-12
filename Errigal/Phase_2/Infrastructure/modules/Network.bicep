@@ -38,7 +38,7 @@ resource CreateHubVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-02-01' 
         name: 'PrivateHubEndpointSubnet'
         properties: {
           addressPrefix: PrivateHubEndpointSubnetAddressPrefix
-          privateEndpointNetworkPolicies: 'NetworkSecurityGroup'
+          privateEndpointNetworkPolicies: 'NetworkSecurityGroupEnabled'
         }
       }
     ]
