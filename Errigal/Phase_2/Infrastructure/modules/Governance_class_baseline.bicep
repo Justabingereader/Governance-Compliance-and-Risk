@@ -169,7 +169,7 @@ resource VMPolicy 'Microsoft.Authorization/policyDefinitions@2023-04-01' = {
             anyOf: [
               {
                 field: 'Microsoft.Compute/virtualMachines/sku.name'
-                notEquals: allowedVmSku
+                notLike: allowedVmSku
               }
             ]
           }
@@ -200,7 +200,7 @@ resource VMScaleSetsPolicy 'Microsoft.Authorization/policyDefinitions@2023-04-01
             anyOf: [
               {
                 field: 'Microsoft.Compute/virtualMachineScaleSets/sku.name'
-                notEquals: allowedVmScaleSetSku
+                notLike: allowedVmScaleSetSku
               }
             ]
           }
@@ -335,22 +335,6 @@ resource RequirecostCentreownerdataClasspolicy 'Microsoft.Authorization/policyDe
           {
             field: 'tags.${requiredTagName2}'
             notIn: allowedOwnerTagValues
-          }
-          {
-            field: 'tags.${requiredTagName3}'
-            exists: false
-          }
-          {
-            field: 'tags.${requiredTagName3}'
-            notIn: allowedDataClassTagValues
-          }
-          {
-            field: 'tags.${requiredTagName3}'
-            exists: false
-          }
-          {
-            field: 'tags.${requiredTagName3}'
-            notIn: allowedDataClassTagValues
           }
         ]
       }
