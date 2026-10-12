@@ -156,6 +156,7 @@ resource NSGRULES 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
         properties: {
           priority: 100
           direction: 'Inbound'
+          sourcePortRange: '*'
           sourceAddressPrefix: appSpokeSubnetAddressPrefix2
           destinationAddressPrefix: PrivateHubEndpointSubnetAddressPrefix
           destinationPortRange: '443'
@@ -168,6 +169,7 @@ resource NSGRULES 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
         properties: {
           priority: 4000
           direction: 'Inbound'
+          sourcePortRange: '*'
           sourceAddressPrefix: '*'
           destinationAddressPrefix: PrivateHubEndpointSubnetAddressPrefix
           destinationPortRange: '*'
