@@ -38,7 +38,10 @@ resource CreateHubVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-02-01' 
         name: 'PrivateHubEndpointSubnet'
         properties: {
           addressPrefix: PrivateHubEndpointSubnetAddressPrefix
-          privateEndpointNetworkPolicies: 'NetworkSecurityGroupEnabled'
+         networkSecurityGroup: {
+           id: NSGRULES.id
+         }
+         privateEndpointNetworkPolicies: 'Enabled'
         }
       }
     ]
@@ -146,7 +149,7 @@ resource CreateDataSpokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualN
 }
 
 resource NSGRULES 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
-  name: 'NSGRULES'
+  name: 'nsg-errigal-hub-pe-neu'
   location: resourceGroup().location
   tags: tags
   properties: {
