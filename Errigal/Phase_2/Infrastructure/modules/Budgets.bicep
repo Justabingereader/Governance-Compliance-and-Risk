@@ -1,19 +1,17 @@
 targetScope = 'resourceGroup'
 
-param budgetAmount int = 200
-param startDate string = '${utcNow('yyyy-MM')}-01'
-@description('The end date for the budget. If not provided, we default this to 10 years from the start date.')
-param endDate string = dateTimeAdd(startDate, 'P1Y')
+param budgetAmount int
+param startDate string
+@description('The end date for the budget.')
+param endDate string
 @description('Minimum budget threshold percentage.')
-param minimumThreshold int = 30
+param minimumThreshold int
 @description('Average budget threshold percentage.')
-param averageThreshold int = 60
+param averageThreshold int
 @description('Maximum budget threshold percentage.')
-param maximumThreshold int = 90
+param maximumThreshold int
 @description('Email addresses that receive budget threshold notifications.')
-param contactEmails string[] = [
-  'Harounimran04@gmail.com'
-]
+param contactEmails string[]
 
 var budgetNotifications = {
   Minimum_Threshold: {

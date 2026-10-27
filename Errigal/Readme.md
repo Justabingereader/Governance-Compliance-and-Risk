@@ -175,3 +175,63 @@ The peerings were then verified in the portal, each showing as Connected and Ful
 ![AppSpokeVNet - peering back to the hub (tenant URL and account redacted)](images/phase2-appspoke-peering.png)
 
 ![DataSpokeVNet - peering back to the hub (tenant URL and account redacted)](images/phase2-dataspoke-peering.png)
+
+I decided to keep the dataspoke empty and available for future workloads which would be inserted into the VNet. The spoke would currently be empty for the phase, with private endpoints being available in the hub.
+
+In order to create my NSG, i mapped out what each subnetprefix actually did at the moment, with only the appspokesubnet2 being the only non empty subnet and thus the only valid subnet to enable as the NSG, i then created a security rule that denied all other inbound traffic to the NSG as it there's an implicit allow of priority 65000 on all successfully peered virtual networks, setting my appspokesubnet 2 to a priority of 100, and the general deny action to a priority of 4000. I then enabled a the private endpoint network policy on the destination subnet in order to enable the operation of NSG. while uploading the bicep file, i ran into a git conflict which occured because i had previously pushed changes in git through the web version, and i didn't run a git pull before running git add and pushing the change.
+
+![Push rejected, then the Readme.md merge conflict on git pull (username redacted)](images/phase2-nsg-push-rejected-conflict.png)
+
+after adding the Readme file that was causing the conflict, the bicep successfully ran. After i pushed the bicep file, it failed due to the lack of specification of a port range in the security rules.
+
+![SecurityRuleParametersMissingForPortRanges - no SourcePortRange on the rule (tracking ID redacted, subscription ID masked by GitHub)](images/phase2-nsg-portrange-failure.png)
+
+The second push also failed due to a syntax error in the specification of the private endpoint network policy, which only specified NetworkSecurityGroup without appending the Enabled keyword.
+
+!['NetworkSecurityGroup' was not found - the invalid privateEndpointNetworkPolicies value (tracking ID redacted)](images/phase2-nsg-enum-value-failure.png)
+
+After these changes, the bicep ran successfully.
+
+![Run #10 'edited Network Module' succeeding](images/phase2-nsg-pipeline-success.png)
+
+![NSGRULES - AllowAppIntegrationSubnet (443/TCP, priority 100) and DenyAllOtherTraffic (priority 4000) above the default rules (tenant URL and account redacted)](images/phase2-nsg-security-rules.png)
+
+However the NSG wasn't actually attached, this was due to a syntactic difference in the declaration of the private endpoint network policy, which made sure it ran but didn't actually do anything.
+
+![NSGRULES associated with no subnets despite the successful run (tenant URL and account redacted)](images/phase2-nsg-subnets-empty.png)
+
+![The cause - id: NSGRULES.id sitting directly in the subnet properties instead of inside a networkSecurityGroup object (username redacted)](images/phase2-nsg-id-inside-properties.png)
+
+after declaring networksecurity group as an object and appending the symbolic name of the nsg to an id tag, then enabling private endpoint network policy outside the object, the private endpoint reflected in the NSG subnet.
+
+![The fix - networkSecurityGroup declared as an object holding the NSG id, with privateEndpointNetworkPolicies set outside it](images/phase2-nsg-corrected-syntax.png)
+
+![PrivateHubEndpointSubnet now showing its security group (tenant URL and account redacted)](images/phase2-nsg-attached-hub-subnet.png)
+
+![Private endpoint network policy enabled for route tables and network security groups (tenant URL and account redacted)](images/phase2-private-endpoint-network-policy.png)
+
+before the final deployment and conclusion of the phase, a what-if review revealed a notLike bug, where notEquals was used for VMPolicy and VMScaleSetPolicy with a "Standard_B*" matching, this was a problem because notEquals doesn't understand wildcard matching, instead matching the text literally, which would cause every VM creation to be denied under this policy, and had only not come up since phase 0 because a VM hadn't been deployed.
+
+![Running az deployment sub what-if against the Phase 2 main.bicep (username and subscription ID redacted)](images/phase2-whatif-run.png)
+
+![What-if on VMPolicy - notEquals "Standard_B*" replaced by notLike (username redacted)](images/phase2-whatif-vmpolicy-notlike.png)
+
+![The same fix on VMScaleSetsPolicy (username redacted)](images/phase2-whatif-vmss-notlike.png)
+
+Another feature was also discovered, which involved Azure making use of incremental deployments when deploying security groups, so when the name of the security group was changed and the bicep file was redeployed, a new security rule resource was created rather than the old resource being renamed.
+
+### Phase 3 Development
+
+For this phase, the first thing i did was create two ADRs which includes the absence of firewall use in this project, and why i chose to not use user-defined routes. The ADRs detailed the context, the decision i made, the accepted consequences of the decision and under what scenarios the ADRs could be superseded. After the creation of the ADRs, i created a key vault module, then in the pararmeter file, i declared the tags for the key vault module, i defined the tags object in the key vault mode, and i created a tag union inside the declared key vault module in the main bicep module, in which both a commonTags object which is the default tag attachment for resources is combined with module specific tags, with the module specific tags getting a higher level of priority.
+
+![KeyVault.bicep - the new Key Vault module with RBAC authorisation enabled (username redacted)](images/phase3-keyvault-module.png)
+
+![keyVaultTags declared in main.bicepparam alongside commonTags (username redacted)](images/phase3-keyvault-tags-param.png)
+
+![The KeyVault module in main.bicep - tags: union(commonTags, keyVaultTags) (username redacted)](images/phase3-main-bicep-keyvault-union.png)
+
+I then navigated to the workflow folder in the .github directory, changing the .yml workflow file deployment directory from phase_2 to phase_3. I then navigated to my command prompt, ran appropraite git commands, verified successful deployment of the workflow on both the github actions tab and the microsoft azure portal.
+
+![Run #13 'key-vault module initial deployment' succeeding](images/phase3-pipeline-success.png)
+
+![ErrigalKeyVault deployed in the Errigal resource group, North Europe (account and tenant domain redacted)](images/phase3-keyvault-portal.png)

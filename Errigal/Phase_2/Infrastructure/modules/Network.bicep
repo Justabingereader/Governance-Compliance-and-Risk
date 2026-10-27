@@ -7,16 +7,17 @@ param appSpokeSubnetAddressPrefix string
 param appSpokeSubnetAddressPrefix2 string
 param dataSpokeAddressPrefix string
 param dataSpokeSubnetAddressPrefix string
+param PrivateHubEndpointSubnetAddressPrefix string
 
 type resourceTags = {
-  costCentre: string
-  owner: string
-  dataClass: string
+  costCentre: 'IT' | 'Finance' | 'Governance'
+  owner: 'Admin' | 'User' | 'Manager'
+  dataClass: 'protected' | 'confidential' | 'internal' | 'public'
 }
 
 param tags resourceTags
 
-resource CreateHubVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-02-01' = {
+resource CreateHubVirtualNetwork 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   name: 'HubSpokeVNet'
   location: resourceGroup().location
   tags: tags
@@ -31,13 +32,25 @@ resource CreateHubVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-02-01' 
         name: 'HubSubnet'
         properties: {
           addressPrefix: hubSubnetAddressPrefix
+          defaultOutboundAccess: false
+        }
+      }
+      {
+        name: 'PrivateHubEndpointSubnet'
+        properties: {
+          addressPrefix: PrivateHubEndpointSubnetAddressPrefix
+          defaultOutboundAccess: false
+         networkSecurityGroup: {
+           id: NSGRULES.id
+         }
+         privateEndpointNetworkPolicies: 'Enabled'
         }
       }
     ]
   }
 }
 
-resource CreateAppSpokeVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-02-01' = {
+resource CreateAppSpokeVirtualNetwork 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   name: 'AppSpokeVNet'
   location: resourceGroup().location
   tags: tags
@@ -52,12 +65,14 @@ resource CreateAppSpokeVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-02
         name: 'AppSpokeSubnet'
         properties: {
           addressPrefix: appSpokeSubnetAddressPrefix
+          defaultOutboundAccess: false
         }
       }
       {
         name: 'AppSpokeSubnet2'
         properties: {
           addressPrefix: appSpokeSubnetAddressPrefix2
+          defaultOutboundAccess: false
           delegations: [
             {
               name: 'appServiceDelegation'
@@ -72,7 +87,7 @@ resource CreateAppSpokeVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-02
   }
 }
 
-resource CreateDataSpokeVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-02-01' = {
+resource CreateDataSpokeVirtualNetwork 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   name: 'DataSpokeVNet'
   location: resourceGroup().location
   tags: tags
@@ -87,13 +102,14 @@ resource CreateDataSpokeVirtualNetwork 'Microsoft.Network/virtualNetworks@2023-0
         name: 'DataSpokeSubnet'
         properties: {
           addressPrefix: dataSpokeSubnetAddressPrefix
+          defaultOutboundAccess: false
         }
       }
     ]
   }
 }
 
-resource CreateHubToAppSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-02-01' = {
+resource CreateHubToAppSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-05-01' = {
   name: 'CreateHubToAppSpokePeering'
   parent: CreateHubVirtualNetwork
   properties: {
@@ -104,7 +120,7 @@ resource CreateHubToAppSpokePeering 'Microsoft.Network/virtualNetworks/virtualNe
   }
 }
 
-resource CreateAppSpokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-02-01' = {
+resource CreateAppSpokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-05-01' = {
   name: 'CreateAppSpokeToHubPeering'
   parent: CreateAppSpokeVirtualNetwork
   properties: {
@@ -115,7 +131,7 @@ resource CreateAppSpokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNe
   }
 }
 
-resource CreateHubToDataSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-02-01' = {
+resource CreateHubToDataSpokePeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-05-01' = {
   name: 'CreateHubToDataSpokePeering'
   parent: CreateHubVirtualNetwork
   properties: {
@@ -126,7 +142,7 @@ resource CreateHubToDataSpokePeering 'Microsoft.Network/virtualNetworks/virtualN
   }
 }
 
-resource CreateDataSpokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2023-02-01' = {
+resource CreateDataSpokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-05-01' = {
   name: 'CreateDataSpokeToHubPeering'
   parent: CreateDataSpokeVirtualNetwork
   properties: {
@@ -134,6 +150,42 @@ resource CreateDataSpokeToHubPeering 'Microsoft.Network/virtualNetworks/virtualN
       id: CreateHubVirtualNetwork.id
     }
     allowVirtualNetworkAccess: true
+  }
+}
+
+resource NSGRULES 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+  name: 'nsg-errigal-hub-pe-neu'
+  location: resourceGroup().location
+  tags: tags
+  properties: {
+    securityRules: [
+      {
+        name: 'AllowAppIntegrationSubnet'
+        properties: {
+          priority: 100
+          direction: 'Inbound'
+          sourcePortRange: '*'
+          sourceAddressPrefix: appSpokeSubnetAddressPrefix2
+          destinationAddressPrefix: PrivateHubEndpointSubnetAddressPrefix
+          destinationPortRange: '443'
+          protocol: 'Tcp'
+          access: 'Allow'
+        }
+      }
+      { 
+        name: 'DenyAllOtherTraffic'
+        properties: {
+          priority: 4000
+          direction: 'Inbound'
+          sourcePortRange: '*'
+          sourceAddressPrefix: '*'
+          destinationAddressPrefix: PrivateHubEndpointSubnetAddressPrefix
+          destinationPortRange: '*'
+          protocol: '*'
+          access: 'Deny'
+        }
+      }
+    ]
   }
 }
 
