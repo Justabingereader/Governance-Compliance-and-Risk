@@ -20,6 +20,7 @@ resource CreateKeyVault 'Microsoft.KeyVault/vaults@2025-05-01' = {
 resource PrivateEndpointForKeyVault 'Microsoft.Network/privateEndpoints@2024-05-01' = {
   name: 'PrivateEndpointForKeyVault'
   location: resourceGroup().location
+  tags: tags
   properties: {
     subnet: {
       id: PrivateHubEndpointSubnetId
