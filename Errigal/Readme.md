@@ -219,3 +219,19 @@ before the final deployment and conclusion of the phase, a what-if review reveal
 ![The same fix on VMScaleSetsPolicy (username redacted)](images/phase2-whatif-vmss-notlike.png)
 
 Another feature was also discovered, which involved Azure making use of incremental deployments when deploying security groups, so when the name of the security group was changed and the bicep file was redeployed, a new security rule resource was created rather than the old resource being renamed.
+
+### Phase 3 Development
+
+For this phase, the first thing i did was create two ADRs which includes the absence of firewall use in this project, and why i chose to not use user-defined routes. The ADRs detailed the context, the decision i made, the accepted consequences of the decision and under what scenarios the ADRs could be superseded. After the creation of the ADRs, i created a key vault module, then in the pararmeter file, i declared the tags for the key vault module, i defined the tags object in the key vault mode, and i created a tag union inside the declared key vault module in the main bicep module, in which both a commonTags object which is the default tag attachment for resources is combined with module specific tags, with the module specific tags getting a higher level of priority.
+
+![KeyVault.bicep - the new Key Vault module with RBAC authorisation enabled (username redacted)](images/phase3-keyvault-module.png)
+
+![keyVaultTags declared in main.bicepparam alongside commonTags (username redacted)](images/phase3-keyvault-tags-param.png)
+
+![The KeyVault module in main.bicep - tags: union(commonTags, keyVaultTags) (username redacted)](images/phase3-main-bicep-keyvault-union.png)
+
+I then navigated to the workflow folder in the .github directory, changing the .yml workflow file deployment directory from phase_2 to phase_3. I then navigated to my command prompt, ran appropraite git commands, verified successful deployment of the workflow on both the github actions tab and the microsoft azure portal.
+
+![Run #13 'key-vault module initial deployment' succeeding](images/phase3-pipeline-success.png)
+
+![ErrigalKeyVault deployed in the Errigal resource group, North Europe (account and tenant domain redacted)](images/phase3-keyvault-portal.png)

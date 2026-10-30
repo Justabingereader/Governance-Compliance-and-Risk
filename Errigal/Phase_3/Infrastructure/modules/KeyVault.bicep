@@ -12,8 +12,5 @@ resource CreateKeyVault 'Microsoft.KeyVault/vaults@2025-05-01' = {
       name: 'standard'
     }
     enableRbacAuthorization: true
-    enabledForDeployment: true
-    enabledForTemplateDeployment: true
-    enabledForDiskEncryption: true
   }
 }
