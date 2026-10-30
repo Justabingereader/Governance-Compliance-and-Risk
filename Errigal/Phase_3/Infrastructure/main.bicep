@@ -116,5 +116,6 @@ module KeyVault './modules/KeyVault.bicep' = {
   scope: resourceGroup('Errigal')
   params: {
     tags: union(commonTags, keyVaultTags)
+    PrivateHubEndpointSubnetId: Network.outputs.PrivateHubEndpointSubnetId
   }
 }

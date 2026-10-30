@@ -235,3 +235,5 @@ I then navigated to the workflow folder in the .github directory, changing the .
 ![Run #13 'key-vault module initial deployment' succeeding](images/phase3-pipeline-success.png)
 
 ![ErrigalKeyVault deployed in the Errigal resource group, North Europe (account and tenant domain redacted)](images/phase3-keyvault-portal.png)
+
+The next step involved making the key vault only accessible privately. The first step was to output the subnetID of the private endpoint in the network module, then declare it as a parameter in the keyvault module, while referencing it as the id of the subnet under the private endpoint resource in the keyvault module, the orchestrator file, in this case the main.bicep file, then uses the subnetID of the private endpoint as the key, and the output id in the network module as the value. finally, public network access was disabled.

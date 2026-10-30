@@ -1,5 +1,6 @@
 targetScope = 'resourceGroup'
 param tags object
+param PrivateHubEndpointSubnetId string
 
 resource CreateKeyVault 'Microsoft.KeyVault/vaults@2025-05-01' = {
   name: 'ErrigalKeyVault'
@@ -12,5 +13,27 @@ resource CreateKeyVault 'Microsoft.KeyVault/vaults@2025-05-01' = {
       name: 'standard'
     }
     enableRbacAuthorization: true
+    publicNetworkAccess: 'Disabled'
+  }
+}
+
+resource PrivateEndpointForKeyVault 'Microsoft.Network/privateEndpoints@2024-05-01' = {
+  name: 'PrivateEndpointForKeyVault'
+  location: resourceGroup().location
+  properties: {
+    subnet: {
+      id: PrivateHubEndpointSubnetId
+    }
+    privateLinkServiceConnections: [
+      {
+        name: 'KeyVaultConnection'
+        properties: {
+          privateLinkServiceId: CreateKeyVault.id
+          groupIds: [
+            'vault'
+          ]
+        }
+      }
+    ]
   }
 }
