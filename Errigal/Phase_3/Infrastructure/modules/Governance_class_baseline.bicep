@@ -112,6 +112,7 @@ resource pinRegionAssignment 'Microsoft.Authorization/policyAssignments@2023-04-
             notIn: [
               'Microsoft.Network/privateDnsZones'
               'Microsoft.Network/privateDnsZones/virtualNetworkLinks'
+              'Microsoft.Network/privateDnsZones/A'
             ]
           }
         ]
