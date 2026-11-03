@@ -1,6 +1,7 @@
 targetScope = 'resourceGroup'
 param tags object
 param PrivateHubEndpointSubnetId string
+param appSpokeVnetId string
 
 resource CreateKeyVault 'Microsoft.KeyVault/vaults@2025-05-01' = {
   name: 'ErrigalKeyVault'
@@ -36,5 +37,23 @@ resource PrivateEndpointForKeyVault 'Microsoft.Network/privateEndpoints@2024-05-
         }
       }
     ]
+  }
+}
+
+resource PrivateDnsZoneForKeyVault 'Microsoft.Network/privateDnsZones@2024-06-01' = {
+  name: 'privatelink.vaultcore.azure.net'
+  location: 'global'
+  tags: tags
+}
+
+resource VNetLinkForKeyVaultDns 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = {
+  parent: PrivateDnsZoneForKeyVault
+  name: 'VNetLinkForKeyVaultDns'
+  location: 'global'
+  properties: {
+    virtualNetwork: {
+      id: appSpokeVnetId
+    }
+    registrationEnabled: false
   }
 }
