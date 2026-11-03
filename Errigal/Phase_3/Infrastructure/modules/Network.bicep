@@ -191,16 +191,16 @@ resource PrivateHubEndpointNSG 'Microsoft.Network/networkSecurityGroups@2024-05-
   properties: {
     securityRules: [
       {
-        name: 'AllowAppIntegrationSubnet'
+        name: 'DenyAppIntegrationSubnet'
         properties: {
           priority: 100
           direction: 'Inbound'
           sourcePortRange: '*'
           sourceAddressPrefix: appSpokeSubnetAddressPrefix2
           destinationAddressPrefix: PrivateHubEndpointSubnetAddressPrefix
-          destinationPortRange: '443'
-          protocol: 'Tcp'
-          access: 'Allow'
+          destinationPortRange: '*'
+          protocol: '*'
+          access: 'deny'
         }
       }
       {
