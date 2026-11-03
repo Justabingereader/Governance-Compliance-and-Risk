@@ -50,6 +50,7 @@ resource VNetLinkForKeyVaultDns 'Microsoft.Network/privateDnsZones/virtualNetwor
   parent: PrivateDnsZoneForKeyVault
   name: 'VNetLinkForKeyVaultDns'
   location: 'global'
+  tags: tags
   properties: {
     virtualNetwork: {
       id: appSpokeVnetId
