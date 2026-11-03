@@ -117,5 +117,6 @@ module KeyVault './modules/KeyVault.bicep' = {
   params: {
     tags: union(commonTags, keyVaultTags)
     PrivateHubEndpointSubnetId: Network.outputs.PrivateHubEndpointSubnetId
+    appSpokeVnetId: Network.outputs.appSpokeVnetId
   }
 }

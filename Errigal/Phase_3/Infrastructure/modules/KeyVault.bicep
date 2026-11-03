@@ -57,3 +57,18 @@ resource VNetLinkForKeyVaultDns 'Microsoft.Network/privateDnsZones/virtualNetwor
     registrationEnabled: false
   }
 }
+
+resource PrivateDnsZoneGroupForKeyVault 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-05-01' = {
+  parent: PrivateEndpointForKeyVault
+  name: 'PrivateDnsZoneGroupForKeyVault'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'KeyVaultDnsConfig'
+        properties: {
+          privateDnsZoneId: PrivateDnsZoneForKeyVault.id
+        }
+      }
+    ]
+  }
+}
