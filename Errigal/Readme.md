@@ -242,6 +242,6 @@ The next step involved creating a privatednszone, because the previously created
 
 
 
-The next step involved creating a VM module, the first thing i did was to create a NIC for the VM to reference.
+The next step involved creating a VM module, the first thing i did was to create a NIC for the VM to reference. i then proceeded to create a VM resource, with my means of authentication set to SSH based authentication to avoid secrets in the pipeline, I used the "ssh-keygen -t rsa -b 4096" to create a 4096 bits rsa key pair locally. After setting the osProfile, hardwareProfile, storageProfile, and NetworkProfile, i deployed the module through git, but the first deployment failed because the name VM was not recognised as a valid template and the standard_b1 series were not deployable in north europe, so i renamed the VM module and changed the VMsize.
 
 

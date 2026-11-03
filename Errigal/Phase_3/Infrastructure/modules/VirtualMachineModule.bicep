@@ -28,7 +28,7 @@ resource VirtualMachine 'Microsoft.Compute/virtualMachines@2025-11-01' = {
   tags: tags
   properties: {
     hardwareProfile: {
-      vmSize: 'Standard_B1s'
+      vmSize: 'Standard_B2as_v2'
     }
     osProfile: {
       computerName: 'vm-errigal-neu'

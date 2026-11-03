@@ -125,8 +125,8 @@ module KeyVault './modules/KeyVault.bicep' = {
   }
 }
 
-module VM './modules/VM.bicep' = {
-  name: 'VM'
+module VirtualMachineModule './modules/VM.bicep' = {
+  name: 'VirtualMachineModule'
   scope: resourceGroup('Errigal')
   params: {
     tags: union(commonTags, VMTags)
