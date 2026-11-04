@@ -236,12 +236,109 @@ I then navigated to the workflow folder in the .github directory, changing the .
 
 ![ErrigalKeyVault deployed in the Errigal resource group, North Europe (account and tenant domain redacted)](images/phase3-keyvault-portal.png)
 
-The next step involved making the key vault only accessible privately. The first step was to output the subnetID of the private endpoint in the network module, then declare it as a parameter in the keyvault module, while referencing it as the id of the subnet under the private endpoint resource in the keyvault module, the orchestrator file, in this case the main.bicep file, then uses the subnetID of the private endpoint as the key, and the output id in the network module as the value. finally, public network access was disabled. During initial deployment, the workflow failed due to the non assignment of tags on the private endpoint resource, but after the assignment of tags, the workflow was successfully executed. During verification of changes, an initial RBAC message was encountered, which didn't actually verify that the change worked, but after assigning a key vaults secrets officer role to myself, i was able to see a different message while confirming the changes made through bicep were successful. After verification, i then revoked access to the key vaults secrets officer role i had initially created.
+The next step involved making the key vault only accessible privately. The first step was to output the subnetID of the private endpoint in the network module, then declare it as a parameter in the keyvault module, while referencing it as the id of the subnet under the private endpoint resource in the keyvault module, the orchestrator file, in this case the main.bicep file, then uses the subnetID of the private endpoint as the key, and the output id in the network module as the value. finally, public network access was disabled.
 
-The next step involved creating a privatednszone, because the previously created private endpoint is represented as a name and not an IP, with the name resolving to a public IP by default, and since public access was turned off, a VM navigating to the endpoint fails to resolve. After this, i had to output the vnet the vms would be present on, then i defined a paremeter of the  network appspoke module output in the keyvault.bicep module, and declared the parameter string in the main.bicep orchestrator file. i then proceeded to define the vnetlink resource, with the privatednszone as its parent. i then proceeded to define the zone group resource type in order to let the private endpoint to discover which zone it belongs to, so when azure deploys the resource, and the IP changes at runtime, azure is able to maintain the IP address mapping without the need for a manual  A record which could go stale, with the parent of the zonegroup being the endpoint and not the zone, so any IP changes are reflected downstream in the zonegroup. i made an update through git control, the first deployment failed because the defined module parameter output was missing a required property, further analysis of the problem revealed unsaved files, which was then speculated as a possible reason for the error. another error relating to policy restrictions was encountered on the second deployment, the second policy of requiring specific tags on every deployed resource was easily solved by applying the tag property on every resource, the first policy however questioned the architecture of the policy itself, with all resources requiring deployment in north europe, resources that have to be defined globally come in direct violation of the policy, with individual exemptions seeming impossible due to the fact that the resource has to exist before it can even be exempted in the first place. after further research, i decided to use resourceselectors, this led me to having to remove the region policy from the existing intiative and create a new policy assignment specifically for the region policy in the governance_class_baseline module.  i then created a resource selector with a type of resource type and selected privatednszones and its virtualnetworklinks child. on the third deployment, the DnsZone and Vnet link successfully deployed, however the deployment failed because the zone group failed, after adding the A record to the selector, the deployment was then successfully verified through the portal and the GitHub actions page. I also confirmed the address of the dns matched the range specified in my main parameter file. due to the fact that i'm going to be using VMs and not an app service plan for now, granting the subnet for it access to my endpoint when it's not in use violates the least priviledged principle, after denying it access to all destination ports on all protocols, i retriggered the git pipeline, confirming the changes broke nothing else.
+![main.bicep passing the private endpoint subnet ID output from the Network module into the KeyVault module (username redacted)](images/phase3-keyvault-module-pe-param.png)
 
+![KeyVault.bicep - private endpoint in the hub subnet and publicNetworkAccess set to Disabled (username redacted)](images/phase3-private-endpoint-public-access-disabled.png)
 
+During initial deployment, the workflow failed due to the non assignment of tags on the private endpoint resource, but after the assignment of tags, the workflow was successfully executed.
 
-The next step involved creating a VM module, the first thing i did was to create a NIC for the VM to reference. i then proceeded to create a VM resource, with my means of authentication set to SSH based authentication to avoid secrets in the pipeline, I used the "ssh-keygen -t rsa -b 4096" to create a 4096 bits rsa key pair locally. After setting the osProfile, hardwareProfile, storageProfile, and NetworkProfile, i deployed the module through git, but the first deployment failed because the name VM was not recognised as a valid template and the standard_b1 series were not deployable in north europe, so i renamed the VM module and changed the VMsize, then i redeployed. The deployment failed because i didn't change the name in the directory path for the VM module in the main bicep file, leaving the script unable to find the file, i fixed the error then redeployed through git. it still failed because of a quota limit, so i navigated to the portal and requested a rate increase. while waiting on the limit increase, i decided to create the identity for the VM, and i made use of a system assigned identity and not a managed identity due to segmentation and absence of orphan identities offered by the system assigned identity. on the VM creation side, i filed a support ticket in order to get my quota limit for the bsv2 vmsize increased, it was denied however due to high region demand, forcing me to consider alternatives. I used the powershell to query all VMs not restricted in the north europe region, due to challenges on the infrastructure end providing me with no feasible means to attain a VM, i decided to switch the architecture to make use of app service instead.
+![Run #16 failing on the tag policy for the private endpoint](images/phase3-pipeline-16-failed-tags.png)
 
+![Run #17 succeeding after tags were added to the private endpoint](images/phase3-pipeline-17-success.png)
+
+During verification of changes, an initial RBAC message was encountered, which didn't actually verify that the change worked, but after assigning a key vaults secrets officer role to myself, i was able to see a different message while confirming the changes made through bicep were successful.
+
+![First check - an RBAC message that does not prove the network change (account and tenant redacted)](images/phase3-keyvault-rbac-message.png)
+
+![With Secrets Officer assigned - public network access is disabled and the request is not from an approved private link (account and tenant redacted)](images/phase3-keyvault-private-access-verified.png)
+
+After verification, i then revoked access to the key vaults secrets officer role i had initially created.
+
+![Key Vault Secrets Officer role assignment removed after verification (IDs and account redacted)](images/phase3-secrets-officer-role-removed.png)
+
+The next step involved creating a privatednszone, because the previously created private endpoint is represented as a name and not an IP, with the name resolving to a public IP by default, and since public access was turned off, a VM navigating to the endpoint fails to resolve. After this, i had to output the vnet the vms would be present on, then i defined a paremeter of the  network appspoke module output in the keyvault.bicep module, and declared the parameter string in the main.bicep orchestrator file.
+
+![privatelink.vaultcore.azure.net private DNS zone with location 'global' (username redacted)](images/phase3-private-dns-zone.png)
+
+![main.bicep passing appSpokeVnetId into the KeyVault module (username redacted)](images/phase3-main-appspokevnetid.png)
+
+i then proceeded to define the vnetlink resource, with the privatednszone as its parent.
+
+![VNet link to the app spoke, parented to the DNS zone, registrationEnabled false (username redacted)](images/phase3-vnet-link.png)
+
+i then proceeded to define the zone group resource type in order to let the private endpoint to discover which zone it belongs to, so when azure deploys the resource, and the IP changes at runtime, azure is able to maintain the IP address mapping without the need for a manual  A record which could go stale, with the parent of the zonegroup being the endpoint and not the zone, so any IP changes are reflected downstream in the zonegroup.
+
+![Private DNS zone group, parented to the private endpoint (username redacted)](images/phase3-dns-zone-group.png)
+
+i made an update through git control, the first deployment failed because the defined module parameter output was missing a required property, further analysis of the problem revealed unsaved files, which was then speculated as a possible reason for the error.
+
+![First deployment - BCP035, the module declaration missing appSpokeVnetId](images/phase3-pipeline-missing-appspokevnetid.png)
+
+another error relating to policy restrictions was encountered on the second deployment, the second policy of requiring specific tags on every deployed resource was easily solved by applying the tag property on every resource, the first policy however questioned the architecture of the policy itself, with all resources requiring deployment in north europe, resources that have to be defined globally come in direct violation of the policy, with individual exemptions seeming impossible due to the fact that the resource has to exist before it can even be exempted in the first place.
+
+![Second deployment - the Pin Region policy denying 'global' resources](images/phase3-pipeline-region-policy-violation.png)
+
+after further research, i decided to use resourceselectors, this led me to having to remove the region policy from the existing intiative and create a new policy assignment specifically for the region policy in the governance_class_baseline module.  i then created a resource selector with a type of resource type and selected privatednszones and its virtualnetworklinks child. on the third deployment, the DnsZone and Vnet link successfully deployed, however the deployment failed because the zone group failed,
+
+![Third deployment - DNS zone and VNet link OK, zone group in Conflict (account and IDs redacted)](images/phase3-zone-group-conflict.png)
+
+![Activity log - the A record write by the DNS service failing (account and tenant redacted)](images/phase3-activity-log-record-set-failed.png)
+
+after adding the A record to the selector, the deployment was then successfully verified through the portal and the GitHub actions page.
+
+![Run #21 succeeding after the A record type was added to the resource selector](images/phase3-pipeline-21-success.png)
+
+I also confirmed the address of the dns matched the range specified in my main parameter file.
+
+![A record errigalkeyvault -> 10.10.1.36, inside the private endpoint subnet (account and tenant redacted)](images/phase3-a-record-10-10-1-36.png)
+
+due to the fact that i'm going to be using VMs and not an app service plan for now, granting the subnet for it access to my endpoint when it's not in use violates the least priviledged principle, after denying it access to all destination ports on all protocols, i retriggered the git pipeline, confirming the changes broke nothing else.
+
+![DenyAppIntegrationSubnet - priority 100, all ports and protocols (username redacted)](images/phase3-nsg-deny-app-integration.png)
+
+![Run #22 succeeding with the deny rule](images/phase3-pipeline-22-success.png)
+
+The next step involved creating a VM module, the first thing i did was to create a NIC for the VM to reference.
+
+![NIC in AppSpokeSubnet with a dynamic private IP and no public IP (username redacted)](images/phase3-vm-nic.png)
+
+i then proceeded to create a VM resource, with my means of authentication set to SSH based authentication to avoid secrets in the pipeline, I used the "ssh-keygen -t rsa -b 4096" to create a 4096 bits rsa key pair locally.
+
+![Ubuntu 24.04 LTS image and Standard_LRS OS disk (username redacted)](images/phase3-vm-ubuntu-2404-disk.png)
+
+![Canonical release cycle - 24.04 LTS in standard support until May 2029](images/phase3-ubuntu-release-cycle.png)
+
+![SSH key auth with password auth disabled and the key path built from adminUsername (username redacted)](images/phase3-vm-ssh-path-interpolation.png)
+
+After setting the osProfile, hardwareProfile, storageProfile, and NetworkProfile, i deployed the module through git, but the first deployment failed because the name VM was not recognised as a valid template and the standard_b1 series were not deployable in north europe, so i renamed the VM module and changed the VMsize, then i redeployed.
+
+![SkuNotAvailable - Standard_B1s restricted in North Europe](images/phase3-b1s-sku-not-available.png)
+
+The deployment failed because i didn't change the name in the directory path for the VM module in the main bicep file, leaving the script unable to find the file, i fixed the error then redeployed through git.
+
+![BCP091 - main.bicep still pointing at the old VM.bicep path](images/phase3-vm-module-path-error.png)
+
+it still failed because of a quota limit, so i navigated to the portal and requested a rate increase.
+
+![QuotaExceeded - standardBasv2Family limit 0](images/phase3-bsv2-quota-exceeded.png)
+
+![Quota request for 2 vCPUs on the Standard Bsv2 family (account and tenant redacted)](images/phase3-bsv2-quota-request.png)
+
+while waiting on the limit increase, i decided to create the identity for the VM, and i made use of a system-assigned managed identity rather than a user-assigned one, due to the segmentation and absence of orphaned identities offered by the system-assigned identity.
+
+![System-assigned managed identity on the VM (username redacted)](images/phase3-vm-system-assigned-identity.png)
+
+on the VM creation side, i filed a support ticket in order to get my quota limit for the bsv2 vmsize increased, it was denied however due to high region demand, forcing me to consider alternatives.
+
+![Bsv2 quota request denied due to high regional demand (subscription ID redacted)](images/phase3-bsv2-quota-denied.png)
+
+I used the powershell to query all VMs not restricted in the north europe region, due to challenges on the infrastructure end providing me with no feasible means to attain a VM, i decided to switch the architecture to make use of app service instead.
+
+![az vm list-skus - every 2-vCPU D-series size Location-restricted for the subscription (account and tenant redacted)](images/phase3-cli-d2-location-restricted.png)
+
+![Confidential VM families open on capacity but at 0 quota (account and tenant redacted)](images/phase3-confidential-quota-zero.png)
+
+![App Service B1 plan blocked by SubscriptionIsOverQuotaForSku](images/phase3-app-service-quota-error.png)
 
