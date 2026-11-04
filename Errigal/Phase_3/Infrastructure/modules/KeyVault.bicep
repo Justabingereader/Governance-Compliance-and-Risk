@@ -87,8 +87,8 @@ resource KeyVaultSecret 'Microsoft.KeyVault/vaults/secrets@2025-05-01' = {
 }
 
 resource VMRoleassignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  scope: keyVaultSecret
-  name: guid(CreateKeyVault.id, VMPrincipalId, 'KeyVaultSecretsUserRole')
+  name: guid(KeyVaultSecret.id, VMPrincipalId, 'KeyVaultSecretsUserRole')
+  scope: KeyVaultSecret
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
     principalId: VMPrincipalId
