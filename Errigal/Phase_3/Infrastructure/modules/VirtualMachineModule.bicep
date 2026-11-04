@@ -26,9 +26,12 @@ resource VirtualMachine 'Microsoft.Compute/virtualMachines@2025-11-01' = {
   name: 'vm-errigal-neu'
   location: resourceGroup().location
   tags: tags
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     hardwareProfile: {
-      vmSize: 'Standard_B2as_v2'
+      vmSize: 'Standard_B2ls_v2'
     }
     osProfile: {
       computerName: 'vm-errigal-neu'
