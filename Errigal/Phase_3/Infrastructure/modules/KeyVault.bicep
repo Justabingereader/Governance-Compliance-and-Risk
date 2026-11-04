@@ -2,6 +2,9 @@ targetScope = 'resourceGroup'
 param tags object
 param PrivateHubEndpointSubnetId string
 param appSpokeVnetId string
+@secure()
+param testSecretValue string = newGuid()
+
 
 resource CreateKeyVault 'Microsoft.KeyVault/vaults@2025-05-01' = {
   name: 'ErrigalKeyVault'
@@ -71,5 +74,13 @@ resource PrivateDnsZoneGroupForKeyVault 'Microsoft.Network/privateEndpoints/priv
         }
       }
     ]
+  }
+}
+
+resource KeyVaultSecret 'Microsoft.KeyVault/vaults/secrets@2025-05-01' = {
+  parent: CreateKeyVault
+  name: 'ErrigalSecret'
+  properties: {
+    value: testSecretValue
   }
 }

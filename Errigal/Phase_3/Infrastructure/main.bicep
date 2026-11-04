@@ -20,6 +20,7 @@ param keyVaultTags object
 @description('Tags specific to the Virtual Machine module.')
 param VMTags object
 
+
 @description('Name of the custom policy initiative.')
 param initiativeName string
 @description('Display name of the custom policy initiative.')
