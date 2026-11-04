@@ -191,16 +191,16 @@ resource PrivateHubEndpointNSG 'Microsoft.Network/networkSecurityGroups@2024-05-
   properties: {
     securityRules: [
       {
-        name: 'AllowAppIntegrationSubnet'
+        name: 'DenyAppIntegrationSubnet'
         properties: {
           priority: 100
           direction: 'Inbound'
           sourcePortRange: '*'
           sourceAddressPrefix: appSpokeSubnetAddressPrefix2
           destinationAddressPrefix: PrivateHubEndpointSubnetAddressPrefix
-          destinationPortRange: '443'
-          protocol: 'Tcp'
-          access: 'Allow'
+          destinationPortRange: '*'
+          protocol: '*'
+          access: 'deny'
         }
       }
       {
@@ -318,6 +318,7 @@ resource DataSpokeSubnetNSG 'Microsoft.Network/networkSecurityGroups@2024-05-01'
 output hubVnetId string = CreateHubVirtualNetwork.id
 output appSpokeVnetId string = CreateAppSpokeVirtualNetwork.id
 output dataSpokeVnetId string = CreateDataSpokeVirtualNetwork.id
+output PrivateHubEndpointSubnetId string = resourceId('Microsoft.Network/virtualNetworks/subnets', CreateHubVirtualNetwork.name, 'PrivateHubEndpointSubnet')
 output hubSubnetId string = resourceId('Microsoft.Network/virtualNetworks/subnets', CreateHubVirtualNetwork.name, 'HubSubnet')
 output appSpokeSubnetId string = resourceId('Microsoft.Network/virtualNetworks/subnets', CreateAppSpokeVirtualNetwork.name, 'AppSpokeSubnet')
 output appSpokeSubnet2Id string = resourceId('Microsoft.Network/virtualNetworks/subnets', CreateAppSpokeVirtualNetwork.name, 'AppSpokeSubnet2')

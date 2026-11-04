@@ -8,6 +8,8 @@ param appSpokeSubnetAddressPrefix2 string
 param dataSpokeAddressPrefix string
 param dataSpokeSubnetAddressPrefix string
 param PrivateHubEndpointSubnetAddressPrefix string
+param sshPublicKey string
+param adminUsername string
 
 @description('Tags shared by resources, including the required governance tags.')
 param commonTags object
@@ -15,6 +17,9 @@ param commonTags object
 param networkTags object
 @description('Tags specific to the Key Vault module.')
 param keyVaultTags object
+@description('Tags specific to the Virtual Machine module.')
+param VMTags object
+
 
 @description('Name of the custom policy initiative.')
 param initiativeName string
@@ -116,5 +121,19 @@ module KeyVault './modules/KeyVault.bicep' = {
   scope: resourceGroup('Errigal')
   params: {
     tags: union(commonTags, keyVaultTags)
+    PrivateHubEndpointSubnetId: Network.outputs.PrivateHubEndpointSubnetId
+    appSpokeVnetId: Network.outputs.appSpokeVnetId
+    VMPrincipalId: VirtualMachineModule.outputs.VMPrincipalId
+  }
+}
+
+module VirtualMachineModule './modules/VirtualMachineModule.bicep' = {
+  name: 'VirtualMachineModule'
+  scope: resourceGroup('Errigal')
+  params: {
+    tags: union(commonTags, VMTags)
+    appSpokeSubnetId: Network.outputs.appSpokeSubnetId
+    sshPublicKey: sshPublicKey
+    adminUsername: adminUsername
   }
 }

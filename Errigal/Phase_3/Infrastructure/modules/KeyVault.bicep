@@ -1,5 +1,11 @@
 targetScope = 'resourceGroup'
 param tags object
+param PrivateHubEndpointSubnetId string
+param appSpokeVnetId string
+@secure()
+param testSecretValue string = newGuid()
+param VMPrincipalId string
+
 
 resource CreateKeyVault 'Microsoft.KeyVault/vaults@2025-05-01' = {
   name: 'ErrigalKeyVault'
@@ -12,5 +18,80 @@ resource CreateKeyVault 'Microsoft.KeyVault/vaults@2025-05-01' = {
       name: 'standard'
     }
     enableRbacAuthorization: true
+    publicNetworkAccess: 'Disabled'
+  }
+}
+
+resource PrivateEndpointForKeyVault 'Microsoft.Network/privateEndpoints@2024-05-01' = {
+  name: 'PrivateEndpointForKeyVault'
+  location: resourceGroup().location
+  tags: tags
+  properties: {
+    subnet: {
+      id: PrivateHubEndpointSubnetId
+    }
+    privateLinkServiceConnections: [
+      {
+        name: 'KeyVaultConnection'
+        properties: {
+          privateLinkServiceId: CreateKeyVault.id
+          groupIds: [
+            'vault'
+          ]
+        }
+      }
+    ]
+  }
+}
+
+resource PrivateDnsZoneForKeyVault 'Microsoft.Network/privateDnsZones@2024-06-01' = {
+  name: 'privatelink.vaultcore.azure.net'
+  location: 'global'
+  tags: tags
+}
+
+resource VNetLinkForKeyVaultDns 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = {
+  parent: PrivateDnsZoneForKeyVault
+  name: 'VNetLinkForKeyVaultDns'
+  location: 'global'
+  tags: tags
+  properties: {
+    virtualNetwork: {
+      id: appSpokeVnetId
+    }
+    registrationEnabled: false
+  }
+}
+
+resource PrivateDnsZoneGroupForKeyVault 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-05-01' = {
+  parent: PrivateEndpointForKeyVault
+  name: 'PrivateDnsZoneGroupForKeyVault'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'KeyVaultDnsConfig'
+        properties: {
+          privateDnsZoneId: PrivateDnsZoneForKeyVault.id
+        }
+      }
+    ]
+  }
+}
+
+resource KeyVaultSecret 'Microsoft.KeyVault/vaults/secrets@2025-05-01' = {
+  parent: CreateKeyVault
+  name: 'ErrigalSecret'
+  properties: {
+    value: testSecretValue
+  }
+}
+
+resource VMRoleassignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(KeyVaultSecret.id, VMPrincipalId, 'KeyVaultSecretsUserRole')
+  scope: KeyVaultSecret
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
+    principalId: VMPrincipalId
+    principalType: 'ServicePrincipal'
   }
 }

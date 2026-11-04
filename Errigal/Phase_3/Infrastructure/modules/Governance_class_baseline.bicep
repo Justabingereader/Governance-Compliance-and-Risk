@@ -85,9 +85,6 @@ resource Custominitiative 'Microsoft.Authorization/policySetDefinitions@2023-04-
       {
         policyDefinitionId: RequirecostCentreownerdataClasspolicy.id
       }
-      {
-        policyDefinitionId: PinregionPolicy.id
-      }
     ]
   }
 }
@@ -100,6 +97,32 @@ resource CustominitiativeAssignment 'Microsoft.Authorization/policyAssignments@2
     policyDefinitionId: Custominitiative.id
   }
 }
+
+resource pinRegionAssignment 'Microsoft.Authorization/policyAssignments@2023-04-01' = {
+  name: 'PinRegionAssignment'
+  properties: {
+    displayName: 'Pin Region Assignment'
+    description: 'Assignment of the Pin Region Policy to pin resources to northern europe.'
+    resourceSelectors : [
+      {
+        name: 'PinRegionAssignmentSelector'
+        selectors: [
+          {
+            kind: 'ResourceType'
+            notIn: [
+              'Microsoft.Network/privateDnsZones'
+              'Microsoft.Network/privateDnsZones/virtualNetworkLinks'
+              'Microsoft.Network/privateDnsZones/A'
+            ]
+          }
+        ]
+      }
+    ]
+    policyDefinitionId: PinregionPolicy.id
+  }
+}
+
+
 
 resource firewallPolicy 'Microsoft.Authorization/policyDefinitions@2023-04-01' = {
   name: 'FirewallPolicy'
