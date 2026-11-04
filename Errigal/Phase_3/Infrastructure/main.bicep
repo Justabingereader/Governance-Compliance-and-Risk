@@ -123,6 +123,7 @@ module KeyVault './modules/KeyVault.bicep' = {
     tags: union(commonTags, keyVaultTags)
     PrivateHubEndpointSubnetId: Network.outputs.PrivateHubEndpointSubnetId
     appSpokeVnetId: Network.outputs.appSpokeVnetId
+    VMPrincipalId: VirtualMachineModule.outputs.VMPrincipalId
   }
 }
 

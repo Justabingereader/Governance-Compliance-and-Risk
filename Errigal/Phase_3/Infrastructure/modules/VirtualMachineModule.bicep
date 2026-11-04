@@ -71,3 +71,5 @@ resource VirtualMachine 'Microsoft.Compute/virtualMachines@2025-11-01' = {
     }
   }
 }
+
+output VMPrincipalId string = VirtualMachine.identity.principalId
