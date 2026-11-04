@@ -22,8 +22,6 @@ param keyVaultTags = {
 	dataClass: 'protected'
 }
 
-@secure()
-param secretValue string = newguid()
 
 param VMTags = {
 	costCentre: 'IT'
